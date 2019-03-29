@@ -466,6 +466,15 @@ int findBestSlot(int maxRows, int (*bColors)[maxRows])
 
 int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 {
+	//so this is the part where I'm supposed to make a graph to determine the next best move
+	//I shouldn't use an adjacency matrix because boardColors[][] tells me which tiles are adjacent
+	//I shouldn't use an adjacency list because then I don't know the relative position of the tiles and thus I can't determine the best move
+	//Each node in the graph would store one integer value for the color of the tile it represents
+	//so I'm going to use a graph, but I'll use boardColors to determine adjacency instead of an adjacency list or an adjacency matrix
+	//and each node is only going to store an integer representing its color
+	//just think of the board as a bunch of integer nodes that are represented by the 2d int array boardColors[][]
+	//now I'm gonna cut out the middle man and just access the integer values of boardColors[][]
+	
 	int trueMax = 0;
 	int c;
 	int max = 0;
@@ -519,19 +528,24 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 		if(c==2) return 150;
 		else return 100;
 	}
-	inaRow = 0;
 	i = column+1;
 	a = 0;
 	while(i < numCols && a < 3)
 	{
 		if(a == 0)
 		{
+			if(bColors[i][row] != c) inaRow = 0;	
 			c = bColors[i][row];
 			if(c==0) break;
 		}
 		if(bColors[i][row] == c) {
 			max++;
 			inaRow++;
+			if(inaRow == 3)
+			{
+				if(c==2) return 150;
+				else return 100;
+			}
 		}
 		else break;
 		i++;
@@ -568,7 +582,6 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 		if(c==2) return 150;
 		else return 100;
 	}
-	inaRow = 0;
 	i = column+1;
 	j = row+1;
 	a = 0;
@@ -576,12 +589,18 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 	{
 		if(a == 0)
 		{
+			if(bColors[i][j] != c) inaRow = 0;
 			c = bColors[i][j];
 			if(c == 0) break;
 		}
 		if(bColors[i][j] == c) {
 			max++;
 			inaRow++;
+			if(inaRow == 3)
+			{
+				if(c==2) return 150;
+				else return 100;
+			}
 		}
 		else break;
 		i++;	j++;	a++;
@@ -616,8 +635,7 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 	{	
 		if(c==2) return 150;
 		else return 100;
-	}
-	inaRow = 0;
+	};
 	i = column+1;
 	j = row-1;
 	a = 0;
@@ -625,12 +643,18 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 	{
 		if(a == 0)
 		{
+			if(bColors[i][j] != c) inaRow = 0;
 			c = bColors[i][j];
 			if(c == 0) break;
 		}
 		if(bColors[i][j] == c) {
 			max++;
 			inaRow++;
+			if(inaRow == 3)
+			{
+				if(c==2) return 150;
+				else return 100;
+			}
 		}
 		else break;
 		i++;	j--;	a++;
