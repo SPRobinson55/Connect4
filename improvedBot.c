@@ -472,6 +472,7 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 
 	int i = row + 1;
 	int a = 0;
+	int inaRow = 0;
 	while(i <= numRows - 1 && a < 3)
 	{
 		if(a == 0) 
@@ -479,13 +480,22 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			c = bColors[column][i];
 			if(c == 0) break;
 		}
-		if(bColors[column][i] == c) max++;
+		if(bColors[column][i] == c){ 
+			max++;
+			inaRow++;
+		}
 		else break;
 		i++;
 		a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}
 	trueMax = max;
 	max = 0;
+	inaRow = 0;
 
 	i = column-1;
 	a = 0;
@@ -496,11 +506,20 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			c = bColors[i][row];
 			if(c == 0) break;
 		}
-		if(bColors[i][row] == c) max++;
+		if(bColors[i][row] == c) {
+			max++;
+			inaRow++;
+		}
 		else break;
 		i--;
 		a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}
+	inaRow = 0;
 	i = column+1;
 	a = 0;
 	while(i < numCols && a < 3)
@@ -510,11 +529,20 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			c = bColors[i][row];
 			if(c==0) break;
 		}
-		if(bColors[i][row] == c) max++;
+		if(bColors[i][row] == c) {
+			max++;
+			inaRow++;
+		}
 		else break;
 		i++;
 		a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}
+	inaRow = 0;
 	if(max>=trueMax) trueMax = max;
 	max = 0;
 
@@ -528,10 +556,19 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 		       c = bColors[i][j];
 		       if(c == 0) break;
 		}
-		if(bColors[i][j] == c) max++;
+		if(bColors[i][j] == c) {
+			max++;
+			inaRow++;
+		}
 		else break;
 		i--;	j--;	a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}
+	inaRow = 0;
 	i = column+1;
 	j = row+1;
 	a = 0;
@@ -542,10 +579,19 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			c = bColors[i][j];
 			if(c == 0) break;
 		}
-		if(bColors[i][j] == c) max++;
+		if(bColors[i][j] == c) {
+			max++;
+			inaRow++;
+		}
 		else break;
 		i++;	j++;	a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}	
+	inaRow = 0;
 	if(max>=trueMax) trueMax = max;
 	max = 0;
 
@@ -559,10 +605,19 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			c = bColors[i][j];
 			if(c == 0) break;
 		}
-		if(bColors[i][j] == c) max++;
+		if(bColors[i][j] == c) {
+			max++;
+			inaRow++;
+		}
 		else break;
 		i--;	j++;	a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}
+	inaRow = 0;
 	i = column+1;
 	j = row-1;
 	a = 0;
@@ -573,10 +628,19 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			c = bColors[i][j];
 			if(c == 0) break;
 		}
-		if(bColors[i][j] == c) max++;
+		if(bColors[i][j] == c) {
+			max++;
+			inaRow++;
+		}
 		else break;
 		i++;	j--;	a++;
 	}
+	if(inaRow == 3)
+	{	
+		if(c==2) return 150;
+		else return 100;
+	}
+	inaRow = 0;
 	if(max>=trueMax) trueMax = max;
 	return trueMax;
 }
