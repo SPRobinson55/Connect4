@@ -220,7 +220,6 @@ int playGame(bool multiplayer, bool repeat)
 	//we need a 2D array of windows to render each board slot
 	//we need another 2D array to save the colors of each node so we can determine if a winning game state has occurred
 	WINDOW *boardWindows[numCols][numRows];
-	int boardColors[numCols][numRows];
 	int i, j;
 	
 	//now we render our empty board
@@ -229,7 +228,6 @@ int playGame(bool multiplayer, bool repeat)
 		for(j = 0; j < numRows; j++)
 		{
 			//initialize all colors to 0 to indicate empty slot
-			boardColors[i][j] = 0;
 			boardWindows[i][j] = newwin(height, width, (height*j) + 3, (width*i) + 3);
 			wattron(boardWindows[i][j], COLOR_PAIR(1));
 			//this switch handles rendering of smol nodes
@@ -315,13 +313,11 @@ int playGame(bool multiplayer, bool repeat)
 				switch (playerTurn) {
 					case 1: 
 						wattron(boardWindows[columnNum][h], COLOR_PAIR(2));
-						boardColors[columnNum][h] = 1;
 						boardVerticies->array[columnNum*numRows+h].slot->color = 1;
 						playerTurn = 2;
 						break;
 					case 2:
 						wattron(boardWindows[columnNum][h], COLOR_PAIR(3));
-						boardColors[columnNum][h] = 2;
 						boardVerticies->array[columnNum*numRows+h].slot->color = 2;
 						playerTurn = 1;
 						break;
@@ -368,11 +364,16 @@ int playGame(bool multiplayer, bool repeat)
 				if(multiplayer == 0)
 				{
 					columnNum = findBestSlot(numRows, boardVerticies);
-					i = 0;
-					while(boardColors[columnNum][numRows-1-i]!=0) i++;
-					h = numRows - 1 - i;
+					h = numRows - 1;
+					struct Node* cur = boardVerticies->array[((columnNum+1)*numRows)-1].slot;
+					while(cur->color != 0)
+					{
+						h--;
+						if(cur->up == NULL)
+							break;
+						cur = cur->up;
+					}
 					wattron(boardWindows[columnNum][h], COLOR_PAIR(3));
-					boardColors[columnNum][h] = 2;
 					boardVerticies->array[columnNum*numRows+h].slot->color = 2;
 					playerTurn = 1;
 					
