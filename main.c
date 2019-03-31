@@ -164,7 +164,8 @@ void renderMenuScreen(int *menuHeight, int *menuWidth, char (*options)[13])
 	*menuHeight = max_y/2;
 	*menuWidth = max_x/3;
 	clear();
-	printw("Press 'e' to select an option");
+	printw("Use the arrow keys to select");
+	mvprintw(1,0, "Press 'e' to select an option");
 	mvprintw(max_y/10, (max_x/2)-10, "Welcome to Connect 4");
 	menu = newwin(*menuHeight, *menuWidth, (*menuHeight)/2, *menuWidth);
 	box(menu, 0, 0);
@@ -211,7 +212,8 @@ int playGame(bool multiplayer, bool repeat)
 	mvwprintw(scoreboard, 1, 0, "P 2 Score: %d", p2Score);
 	wrefresh(scoreboard);
 
-	printw("Press 'q' to return to menu, press 'e' to place chip");
+	printw("Press 'q' to return to menu || press 'e' to place chip"); 
+	mvprintw(1, 0, "Use the arrow keys to move the selector");
 	start_color();
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	
@@ -343,7 +345,7 @@ int playGame(bool multiplayer, bool repeat)
 						break;
 					case 1:
 						p1Score++;
-						mvprintw(1,0, "Player1 wins, press any key to reset");
+						mvprintw(2, max_x/4, "Player1 wins, press any key to reset");
 						refresh();
 						getch();
 						delwin(scoreboard);
@@ -351,7 +353,7 @@ int playGame(bool multiplayer, bool repeat)
 						break;
 					case 2:
 						p2Score++;
-						mvprintw(1,0, "Player2 wins, press any key to reset ");
+						mvprintw(2, max_x/4, "Player2 wins, press any key to reset ");
 						refresh();
 						getch();
 						delwin(scoreboard);
@@ -391,7 +393,7 @@ int playGame(bool multiplayer, bool repeat)
 					if(checkForWin(columnNum, h, numRows, boardVerticies) == 2)
 					{
 						p2Score++;
-						mvprintw(1,0,"Player2 wins, press any key to reset ");
+						mvprintw(2, max_x/4 ,"Player2 wins, press any key to reset ");
 						refresh();
 						getch();
 						delwin(scoreboard);
