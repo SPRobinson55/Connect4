@@ -18,5 +18,7 @@ Then, the algorithm calculates the number of adjacent in-a-row nodes of either c
 The algorithm prioritizes nodes that result in a win for either player, always choosing to complete a 4-in-a-row or block an opponents 4-in-a-row. It prioritizes winning over blocking so it doesn't throw a victory to block.
 The algorithm also avoids placing a chip in a slot that would allow the opponent to complete a 4-in-a-row, so it doesn't give away wins.
 
+**note about the demo video: when I say "I didn't render that properly" when demonstrating the singleplayer mode I'm referring to me inputting a 7x6 connect 4 board instead of the standard 6x7**
+
 
 Github: https://github.com/SPRobinson55/Connect4.git  
