@@ -10,12 +10,92 @@ int p2Score = 0;
 int numRows = 0;
 int numCols = 0;
 
+struct Node{
+	int color;
+	struct Node* up;
+	struct Node* down;
+	struct Node* left;
+	struct Node* right;
+	struct Node* uleft;
+	struct Node* uright;
+	struct Node* dleft;
+	struct Node* dright;
+};
+
+struct Vertex{
+	//each vertex points to a node containing information about that slot's color and adjacent slots
+	struct Node* slot;
+};
+
+struct Graph{
+	//the graph holds an array of verticies, each representing a board slot
+	//it's like an adjacency list except it stores position too
+	int V;
+	struct Vertex* array;
+};
+
+struct Node* createNode()
+{
+	struct Node* newNode = (struct Node*)malloc(sizeof(struct Node)); 
+	newNode->color = 0;
+	newNode->up = NULL;
+	newNode->down = NULL;
+	newNode->left = NULL;
+	newNode->right = NULL;
+	newNode->uleft = NULL;
+	newNode->uright = NULL;
+	newNode->dleft = NULL;
+	newNode->dright = NULL;
+	return newNode;
+}
+
+struct Graph* createBoard(int numCols, int numRows)
+{
+	//first we need to allocate memory for the graph and it's 
+	struct Graph* graph = (struct Graph*)malloc(sizeof(struct Graph));
+	int verticies = numRows * numCols;
+	graph->V = verticies;
+
+	graph->array = (struct Vertex*)malloc(verticies * sizeof(struct Vertex));
+	//now we need to create our board of empty slots and link the adjacent ones.
+	for(int i = 0; i < verticies; i++)
+	{
+		graph->array[i].slot = createNode();
+		if(i!=0)
+		{
+			
+		if((i % numRows) != 0)
+		{
+			graph->array[i].slot->up = graph->array[i-1].slot;
+			graph->array[i-1].slot->down = graph->array[i].slot;
+		}
+		if(i>=numRows) 
+		{
+			graph->array[i].slot->left = graph->array[i-numRows].slot;
+			graph->array[i-numRows].slot->right = graph->array[i].slot;
+			if((i % numRows) != 0)
+			{
+				graph->array[i].slot->uleft = graph->array[i-1-numRows].slot;
+				graph->array[i-1-numRows].slot->dright = graph->array[i].slot;
+			}
+			if((i % numRows) != numRows-1)
+			{
+				graph->array[i].slot->dleft = graph->array[i+1-numRows].slot;
+				graph->array[i+1-numRows].slot->uright = graph->array[i].slot;
+			}
+		}
+		
+		}
+	}
+	return graph;
+}
 void renderMenuScreen(int *, int *, char (*)[13]);
 int playGame(bool, bool);
-int checkForWin(int , int , int maxRows, int (*)[maxRows]);
-int findBestSlot(int maxRows, int (*)[maxRows]);
-int findMaxSameAdj(int , int , int maxRows, int (*b)[maxRows]);
+int checkForWin(int , int , int maxRows, struct Graph*);
+int findBestSlot(int maxRows, struct Graph*);
+int findMaxSameAdj(int , int , int maxRows, struct Graph*);
 void getBoardDimensions();
+
 
 int main()
 {
@@ -135,11 +215,15 @@ int playGame(bool multiplayer, bool repeat)
 	start_color();
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	
+
+	struct Graph* boardVerticies = createBoard(numCols, numRows);
 	//we need a 2D array of windows to render each board slot
 	//we need another 2D array to save the colors of each node so we can determine if a winning game state has occurred
 	WINDOW *boardWindows[numCols][numRows];
 	int boardColors[numCols][numRows];
 	int i, j;
+	
+	//now we render our empty board
 	for(i = 0; i < numCols; i++)
 	{
 		for(j = 0; j < numRows; j++)
@@ -178,12 +262,13 @@ int playGame(bool multiplayer, bool repeat)
 	init_pair(2, COLOR_RED, COLOR_RED);
 	init_pair(3, COLOR_BLUE, COLOR_BLUE);
 	int playerTurn = 1;
+
+	int h;
 	
 	curs_set(0);
 	keypad(selector, true);
 	while(ch=wgetch(selector))
 	{
-		int i = 0;
 		//calculate the selector's position
 		int columnNum = (xpos-3)/width;
 		//read an input to move the selector or place a chip
@@ -213,20 +298,31 @@ int playGame(bool multiplayer, bool repeat)
 				break;
 			case 'e':
 				//calculate the height, h, of the lowest empty slot in the column above the selector
-				i = 0;
-				while(boardColors[columnNum][numRows-1-i] != 0) i++;
-				int h = numRows-1-i;
-				if(h<0) break; //the column is full, can't place a chip
+				h = numRows - 1;
+				struct Node* cur = boardVerticies->array[((columnNum+1)*numRows)-1].slot;
+				while(cur->color != 0)
+				{
+					h--;
+					if(cur->up == NULL)
+					{
+						if(cur->color != 0) h--;
+						break;
+					}
+					cur = cur->up;
+				}
+				if(h < 0) break; //the column is full, can't place a chip
 				//now we place the chip in the determined slot
 				switch (playerTurn) {
 					case 1: 
 						wattron(boardWindows[columnNum][h], COLOR_PAIR(2));
 						boardColors[columnNum][h] = 1;
+						boardVerticies->array[columnNum*numRows+h].slot->color = 1;
 						playerTurn = 2;
 						break;
 					case 2:
 						wattron(boardWindows[columnNum][h], COLOR_PAIR(3));
 						boardColors[columnNum][h] = 2;
+						boardVerticies->array[columnNum*numRows+h].slot->color = 2;
 						playerTurn = 1;
 						break;
 					default:
@@ -246,7 +342,7 @@ int playGame(bool multiplayer, bool repeat)
 				refresh();
 				
 				//now we need to check to see if the chip that was just placed resulted in a 4-in-a-row
-				switch(checkForWin(columnNum, h, numRows, boardColors)){
+				switch(checkForWin(columnNum, h, numRows, boardVerticies)){
 					case 0:
 						break;
 					case 1:
@@ -271,12 +367,13 @@ int playGame(bool multiplayer, bool repeat)
 				//now if it's singleplayer mode we need to make a turn for the AI because player1 has just taken his turn
 				if(multiplayer == 0)
 				{
-					columnNum = findBestSlot(numRows, boardColors);
+					columnNum = findBestSlot(numRows, boardVerticies);
 					i = 0;
 					while(boardColors[columnNum][numRows-1-i]!=0) i++;
 					h = numRows - 1 - i;
 					wattron(boardWindows[columnNum][h], COLOR_PAIR(3));
 					boardColors[columnNum][h] = 2;
+					boardVerticies->array[columnNum*numRows+h].slot->color = 2;
 					playerTurn = 1;
 					
 					if(height <= 2)
@@ -290,7 +387,7 @@ int playGame(bool multiplayer, bool repeat)
 					wrefresh(boardWindows[columnNum][h]);
 					refresh();
 
-					if(checkForWin(columnNum, h, numRows, boardColors) == 2)
+					if(checkForWin(columnNum, h, numRows, boardVerticies) == 2)
 					{
 						p2Score++;
 						mvprintw(1,0,"Player2 wins, press any key to reset ");
@@ -315,125 +412,118 @@ int playGame(bool multiplayer, bool repeat)
 	return 0;
 }
 
-int checkForWin(int column, int row, int maxRows, int (*bColors)[maxRows])
+int checkForWin(int column, int row, int maxRows, struct Graph* board)
 {
 	int oCol = column;
 	int oRow = row;
-	int c = bColors[column][row];
+	struct Node* origin = board->array[column*maxRows + row].slot;
+	struct Node* cur = origin;
+
+	int c = cur->color;
 	int inaRow = 1;
 	//we need to check the 8 adjacent slots to our current slot
 	//let's check the horizontal and vertical first because those are easier
-	int i = row + 1;
 	int a = 0;
 	//we only need to check below for vertical wins
-	while(i <= numRows - 1 && a < 3)
+	while(cur->down != NULL && a < 3)
 	{
-		if(bColors[column][i] == c) inaRow++;
+		if(cur->down->color == c) inaRow++;
 		else break;
-		i++;
+		cur = cur->down;
 		a++;
 	}
 	if(inaRow == 4) return c;
 
-	inaRow = 0;
-	i = column;
-	for(a = 0; a < 3; a++)
-		if(i>0) i--;
-	a = 0;
-	while(i<=numCols-1 && a < 7)
+	//now we check the 7 nodes that form a horizontal line with the origin node at the center, if we find 4 same color chips in a row we have found a win
+	inaRow = 1;
+	cur = origin;
+	while(cur->left != NULL && a < 3)
 	{
-		if(bColors[i][row] == c)
+		if(cur->left->color == c)
 		{
 			inaRow++;
 			if(inaRow==4) return c;
 		}
-		else inaRow = 0;
-		i++;
+		else break;
+		cur = cur->left;
+		a++;
+	}
+	a = 0;
+	cur = origin;
+	while(cur->right != NULL && a < 3)
+	{
+		if(cur->right->color == c)
+		{
+			inaRow++;
+			if(inaRow==4) return c;
+		}
+		else break;
+		cur = cur->right;
+		a++;
+	}
+	
+
+	//now we check the upleft-downright diagonal line the same way we checked the horizonal
+	inaRow = 1;
+	cur = origin;
+	while(cur->uleft != NULL && a < 3)
+	{
+		if(cur->uleft->color == c)
+		{
+			inaRow++;
+			if(inaRow==4) return c;
+		}
+		else break;
+		cur = cur->uleft;
+		a++;
+	}
+	a = 0;
+	cur = origin;
+	while(cur->dright != NULL && a < 3)
+	{
+		if(cur->dright->color == c)
+		{
+			inaRow++;
+			if(inaRow==4) return c;
+		}
+		else break;
+		cur = cur->dright;
 		a++;
 	}
 
-	inaRow = 1;
-	if(column>0 && row>0) //we can check up left
-		if(bColors[column-1][row-1] == c)
-		{
-			column--;
-			row--;
-			inaRow++;
-			if(column>0 && row>0)
-				if(bColors[column-1][row-1] == c)
-				{
-					column--;
-					row--;
-					inaRow++;
-					if(column>0 && row>0)
-						if(bColors[column-1][row-1] == c)
-							inaRow++;
-				}
-		}
-	column = oCol;
-	row = oRow;
-	if(column < numCols-1 && row < numRows-1)//we can check bottom right, in line with up left
-		if(bColors[column+1][row+1] == c)
-		{
-			column++;
-			row++;
-			inaRow++;
-			if(column < numCols-1 && row < numRows-1)
-				if(bColors[column+1][row+1] == c)
-				{
-					column++;
-					row++;
-					inaRow++;
-					if(column < numCols-1 && row < numRows-1)
-						if(bColors[column+1][row+1] == c)
-							inaRow++;
-				}
-		}
-	if(inaRow>=4) return c;
 
+	//and now the upright-downleft diagonal
 	inaRow = 1;
-	//now we do the same with the other diagonal
-	if(column > 0 && row <= numRows-1) //bottom left
-		if(bColors[column-1][row+1] == c)
+	cur = origin;
+	while(cur->dleft != NULL && a < 3)
+	{
+		if(cur->dleft->color == c)
 		{
-			column--;
-			row++;
 			inaRow++;
-			if(column > 0 && row <= numRows-1)
-				if(bColors[column-1][row+1] == c)
-				{
-					column--;
-					row++;
-					inaRow++;
-					if(column > 0 && row <= numRows-1)
-						if(bColors[column-1][row+1] == c)
-							inaRow++;
-				}
+			if(inaRow==4) return c;
 		}
-	column = oCol;
-	row = oRow;
-	if(column <= numCols-1 && row > 0) //up right
-		if(bColors[column+1][row-1] == c)
+		else break;
+		cur = cur->dleft;
+		a++;
+	}
+	a = 0;
+	cur = origin;
+	while(cur->uright != NULL && a < 3)
+	{
+		if(cur->uright->color == c)
 		{
-			column++;
-			row--;
 			inaRow++;
-			if(column <= numCols-1 && row > 0)
-				if(bColors[column+1][row-1] == c)
-				{
-					column++;
-					row--;
-					inaRow++;
-					if(column <= numCols-1 && row > 0)
-						if(bColors[column+1][row-1] == c)
-							inaRow++;
-				}
+			if(inaRow==4) return c;
 		}
-	if(inaRow>=4) return c;
+		else break;
+		cur = cur->uright;
+		a++;
+	}
+
 	return 0; //you didn't find any 4 in a rows :P
 }
 
-int findBestSlot(int maxRows, int (*bColors)[maxRows])
+int findBestSlot(int maxRows, struct Graph* board)
 {
 	int maxInaRows[numCols];
 	int trueMax = 0;
@@ -441,10 +531,22 @@ int findBestSlot(int maxRows, int (*bColors)[maxRows])
 	int position = 0;
 	for(int i = 0; i < numCols; i++)
 	{
-		int j = 0;
-		while(bColors[i][numRows-1-j]!=0) j++;
-		int h = numRows-1-j;
-		maxInaRows[i] = findMaxSameAdj(i, h, numRows, bColors);
+		int h = numRows-1;
+		struct Node* cur = board->array[((i+1)*numRows)-1].slot;
+		while(cur->color != 0)
+		{
+			h--;
+			if(cur->up == NULL)
+			{
+				if(cur->color != 0) h--;
+				break;
+			}
+			cur = cur->up;
+		}
+		if(h < 0)
+			maxInaRows[i] = 0;
+		else
+			maxInaRows[i] = findMaxSameAdj(i, h, numRows, board);
 		if(maxInaRows[i] > trueMax)
 		{
 			trueMax = maxInaRows[i];
@@ -464,37 +566,38 @@ int findBestSlot(int maxRows, int (*bColors)[maxRows])
 
 }
 
-int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
+int findMaxSameAdj(int column, int row, int maxRows, struct Graph* board)
 {
-	//so this is the part where I'm supposed to make a graph to determine the next best move
-	//I shouldn't use an adjacency matrix because boardColors[][] tells me which tiles are adjacent
-	//I shouldn't use an adjacency list because then I don't know the relative position of the tiles and thus I can't determine the best move
-	//Each node in the graph would store one integer value for the color of the tile it represents
-	//so I'm going to use a graph, but I'll use boardColors to determine adjacency instead of an adjacency list or an adjacency matrix
-	//and each node is only going to store an integer representing its color
-	//just think of the board as a bunch of integer nodes that are represented by the 2d int array boardColors[][]
-	//now I'm gonna cut out the middle man and just access the integer values of boardColors[][]
-	
+
+	//I want to select a slot to place our chip based on the number of in-a-rows we add to/block.
+	//more adjacent same color lines means the slot is more highly contested
+	//if I detect 3 in a row of either color adjacent to the slot I'm checking, I NEED to place a chip there, because it either secures a victory or prevents an opponent victory
+	//I should prefer blue 3 in a rows over red 3 in a rows because I shouldn't block when I can just win.
+	//
+	//I can't use a standard depth first search because 4-in-a rows can only be created linearly. so changing direction mid search bunks everyting up
+	//
+	//
 	int trueMax = 0;
 	int c;
 	int max = 0;
+	struct Node* origin = board->array[column*maxRows + row].slot;
+	struct Node* cur = origin;
 
-	int i = row + 1;
 	int a = 0;
 	int inaRow = 0;
-	while(i <= numRows - 1 && a < 3)
+	while(cur->down != NULL && a < 3)
 	{
 		if(a == 0) 
 		{
-			c = bColors[column][i];
+			c = cur->down->color;
 			if(c == 0) break;
 		}
-		if(bColors[column][i] == c){ 
+		if(cur->down->color == c){ 
 			max++;
 			inaRow++;
 		}
 		else break;
-		i++;
+		cur = cur->down;
 		a++;
 	}
 	if(inaRow == 3)
@@ -506,21 +609,21 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 	max = 0;
 	inaRow = 0;
 
-	i = column-1;
+	cur = origin;
 	a = 0;
-	while(i > 0 && a < 3)
+	while(cur->left != NULL && a < 3)
 	{
 		if(a == 0) 
 		{
-			c = bColors[i][row];
+			c = cur->left->color;
 			if(c == 0) break;
 		}
-		if(bColors[i][row] == c) {
+		if(cur->left->color == c) {
 			max++;
 			inaRow++;
 		}
 		else break;
-		i--;
+		cur = cur->left;
 		a++;
 	}
 	if(inaRow == 3)
@@ -528,17 +631,17 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 		if(c==2) return 150;
 		else return 100;
 	}
-	i = column+1;
+	cur = origin;
 	a = 0;
-	while(i < numCols && a < 3)
+	while(cur->right != NULL && a < 3)
 	{
 		if(a == 0)
 		{
-			if(bColors[i][row] != c) inaRow = 0;	
-			c = bColors[i][row];
+			if(cur->right->color != c) inaRow = 0;	
+			c = cur->right->color;
 			if(c==0) break;
 		}
-		if(bColors[i][row] == c) {
+		if(cur->right->color == c) {
 			max++;
 			inaRow++;
 			if(inaRow == 3)
@@ -548,7 +651,7 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			}
 		}
 		else break;
-		i++;
+		cur = cur->right;
 		a++;
 	}
 	if(inaRow == 3)
@@ -560,40 +663,41 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 	if(max>=trueMax) trueMax = max;
 	max = 0;
 
-	i = column-1;
-	int j = row -1;
+
+	cur = origin;
 	a = 0;
-	while(i > 0 && j > 0 && a < 3)
+	while(cur-> dright != NULL && a < 3)
 	{
 		if(a == 0)
 		{
-		       c = bColors[i][j];
+		       c = cur->dright->color;
 		       if(c == 0) break;
 		}
-		if(bColors[i][j] == c) {
+		if(cur->dright->color == c) {
 			max++;
 			inaRow++;
 		}
 		else break;
-		i--;	j--;	a++;
+		cur = cur->dright;
+		a++;
 	}
 	if(inaRow == 3)
 	{	
 		if(c==2) return 150;
 		else return 100;
 	}
-	i = column+1;
-	j = row+1;
+
+	cur = origin;
 	a = 0;
-	while(i < numCols && j < numRows && a < 3)
+	while(cur->uleft != NULL && a < 3)
 	{
 		if(a == 0)
 		{
-			if(bColors[i][j] != c) inaRow = 0;
-			c = bColors[i][j];
+			if(cur->uleft->color) inaRow = 0;
+			c = cur->uleft->color;
 			if(c == 0) break;
 		}
-		if(bColors[i][j] == c) {
+		if(cur->uleft->color == c) {
 			max++;
 			inaRow++;
 			if(inaRow == 3)
@@ -603,7 +707,8 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			}
 		}
 		else break;
-		i++;	j++;	a++;
+		cur = cur->uleft;
+		a++;
 	}
 	if(inaRow == 3)
 	{	
@@ -614,40 +719,41 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 	if(max>=trueMax) trueMax = max;
 	max = 0;
 
-	i = column-1;
-	j = row+1;
+
+	cur = origin;
 	a = 0;
-	while(i > 0 && j < numRows && a < 3)
+	while(cur->dleft != NULL && a < 3)
 	{
 		if(a == 0)
 		{
-			c = bColors[i][j];
+			c = cur->dleft->color;
 			if(c == 0) break;
 		}
-		if(bColors[i][j] == c) {
+		if(cur->dleft->color == c) {
 			max++;
 			inaRow++;
 		}
 		else break;
-		i--;	j++;	a++;
+		cur = cur->dleft;
+		a++;
 	}
 	if(inaRow == 3)
 	{	
 		if(c==2) return 150;
 		else return 100;
-	};
-	i = column+1;
-	j = row-1;
+	}
+
+	cur = origin;
 	a = 0;
-	while(i < numCols && j > 0 && a < 3)
+	while(cur->uright != NULL && a < 3)
 	{
 		if(a == 0)
 		{
-			if(bColors[i][j] != c) inaRow = 0;
-			c = bColors[i][j];
+			if(cur->uright->color != c) inaRow = 0;
+			c = cur->uright->color;
 			if(c == 0) break;
 		}
-		if(bColors[i][j] == c) {
+		if(cur->uright->color == c) {
 			max++;
 			inaRow++;
 			if(inaRow == 3)
@@ -657,14 +763,14 @@ int findMaxSameAdj(int column, int row, int maxRows, int (*bColors)[maxRows])
 			}
 		}
 		else break;
-		i++;	j--;	a++;
+		cur = cur->uright;
+		a++;
 	}
 	if(inaRow == 3)
 	{	
 		if(c==2) return 150;
 		else return 100;
 	}
-	inaRow = 0;
 	if(max>=trueMax) trueMax = max;
 	return trueMax;
 }
