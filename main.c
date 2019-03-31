@@ -438,6 +438,7 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 	//now we check the 7 nodes that form a horizontal line with the origin node at the center, if we find 4 same color chips in a row we have found a win
 	inaRow = 1;
 	cur = origin;
+	a = 0;
 	while(cur->left != NULL && a < 3)
 	{
 		if(cur->left->color == c)
@@ -449,8 +450,8 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 		cur = cur->left;
 		a++;
 	}
-	a = 0;
 	cur = origin;
+	a = 0;
 	while(cur->right != NULL && a < 3)
 	{
 		if(cur->right->color == c)
@@ -467,6 +468,7 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 	//now we check the upleft-downright diagonal line the same way we checked the horizonal
 	inaRow = 1;
 	cur = origin;
+	a = 0;
 	while(cur->uleft != NULL && a < 3)
 	{
 		if(cur->uleft->color == c)
@@ -478,8 +480,8 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 		cur = cur->uleft;
 		a++;
 	}
-	a = 0;
 	cur = origin;
+	a = 0;
 	while(cur->dright != NULL && a < 3)
 	{
 		if(cur->dright->color == c)
@@ -496,6 +498,7 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 	//and now the upright-downleft diagonal
 	inaRow = 1;
 	cur = origin;
+	a = 0;
 	while(cur->dleft != NULL && a < 3)
 	{
 		if(cur->dleft->color == c)
@@ -507,8 +510,8 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 		cur = cur->dleft;
 		a++;
 	}
-	a = 0;
 	cur = origin;
+	a = 0;
 	while(cur->uright != NULL && a < 3)
 	{
 		if(cur->uright->color == c)
@@ -527,7 +530,7 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 int findBestSlot(int maxRows, struct Graph* board)
 {
 	int maxInaRows[numCols];
-	int trueMax = 0;
+	int trueMax = -1000;
 	int bestSlot[numCols];
 	int position = 0;
 	for(int i = 0; i < numCols; i++)
@@ -544,10 +547,17 @@ int findBestSlot(int maxRows, struct Graph* board)
 			}
 			cur = cur->up;
 		}
-		if(h < 0)
-			maxInaRows[i] = 0;
+		if(h < 0) // the column is full, we can't place it there
+			maxInaRows[i] = -50;
 		else
+		{
 			maxInaRows[i] = findMaxSameAdj(i, h, numRows, board);
+			//I don't want to place a chip that will give my opponent a win, but I don't care if placing that chip wins the game for me
+			if(maxInaRows[i] != 150)
+				if(h > 0)
+					if(findMaxSameAdj(i, h-1, numRows, board) == 100)
+						maxInaRows[i] = -5;
+		}
 		if(maxInaRows[i] > trueMax)
 		{
 			trueMax = maxInaRows[i];
