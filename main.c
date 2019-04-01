@@ -206,7 +206,7 @@ int playGame(bool multiplayer, bool repeat)
 	int xpos = 3;
 	int ypos = max_y - 3;
 
-	
+	//every time we play a new game we have to update the score	
 	scoreboard = newwin(height, max_x/2, 0, max_x/2);
 	wprintw(scoreboard, "P 1 Score: %d", p1Score);
 	mvwprintw(scoreboard, 1, 0, "P 2 Score: %d", p2Score);
@@ -218,9 +218,7 @@ int playGame(bool multiplayer, bool repeat)
 	init_pair(1, COLOR_YELLOW, COLOR_BLACK);
 	
 
-	struct Graph* boardVerticies = createBoard(numCols, numRows);
 	//we need a 2D array of windows to render each board slot
-	//we need another 2D array to save the colors of each node so we can determine if a winning game state has occurred
 	WINDOW *boardWindows[numCols][numRows];
 	int i, j;
 	
@@ -229,7 +227,6 @@ int playGame(bool multiplayer, bool repeat)
 	{
 		for(j = 0; j < numRows; j++)
 		{
-			//initialize all colors to 0 to indicate empty slot
 			boardWindows[i][j] = newwin(height, width, (height*j) + 3, (width*i) + 3);
 			wattron(boardWindows[i][j], COLOR_PAIR(1));
 			//this switch handles rendering of smol nodes
@@ -264,6 +261,9 @@ int playGame(bool multiplayer, bool repeat)
 	int playerTurn = 1;
 
 	int h;
+
+	//now we make our empty board and start getting input to move the selector and place chips
+	struct Graph* boardVerticies = createBoard(numCols, numRows);
 	
 	curs_set(0);
 	keypad(selector, true);
@@ -424,8 +424,7 @@ int checkForWin(int column, int row, int maxRows, struct Graph* board)
 
 	int c = cur->color;
 	int inaRow = 1;
-	//we need to check the 8 adjacent slots to our current slot
-	//let's check the horizontal and vertical first because those are easier
+	//we need to check the 7 adjacent slots to our current slot (don't need top because if we just placed it there then there's no chip on top of it.
 	int a = 0;
 	//we only need to check below for vertical wins
 	while(cur->down != NULL && a < 3)
